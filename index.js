@@ -24,6 +24,11 @@ client.on("ready", () => {
   console.log(`✅ Bot je online jako ${client.user.tag}`);
 });
 
+// TEST - loguj VŠECHNY zprávy
+client.on("messageCreate", (msg) => {
+  console.log(`📨 Zpráva od ${msg.author.tag}: "${msg.content}"`);
+});
+
 // Uvítací zpráva
 client.on("guildMemberAdd", (member) => {
   const channel = member.guild.channels.cache.get(process.env.WELCOME_CHANNEL);
