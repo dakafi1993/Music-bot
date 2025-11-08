@@ -1,9 +1,5 @@
 require("dotenv").config();
-
-// Mini webserver, aby Railway nepřestalo botovi kroutit krkem
 const http = require("http");
-http.createServer((req, res) => res.end("Bot je online")).listen(3000);
-
 const {
   Client,
   GatewayIntentBits,
@@ -24,12 +20,7 @@ const client = new Client({
   partials: [Partials.Message, Partials.Channel, Partials.Reaction]
 });
 
-// Bot online
-client.on("ready", () => {
-  console.log(`✅ Bot je online jako ${client.user.tag}`);
-});
-
-// Uvítací zpráva
+// ---- Uvítací zpráva ----
 client.on("guildMemberAdd", (member) => {
   const channel = member.guild.channels.cache.get(process.env.WELCOME_CHANNEL);
   if (!channel) return;
@@ -43,11 +34,12 @@ client.on("guildMemberAdd", (member) => {
   channel.send({ embeds: [embed] });
 });
 
-// Role tlačítka
+// ---- Nastavení tlačítkových rolí ----
 client.on("messageCreate", (msg) => {
   if (msg.content === "!setroles") {
-    if (msg.channel.id !== process.env.ROLE_CHANNEL)
+    if (msg.channel.id !== process.env.ROLE_CHANNEL) {
       return msg.reply("Použij to ve správném kanálu.");
+    }
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("cs2").setLabel("CS2 💀").setStyle(ButtonStyle.Primary),
@@ -63,7 +55,7 @@ client.on("messageCreate", (msg) => {
   }
 });
 
-// Reakce na tlačítka
+// ---- Interakce s tlačítky ----
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
@@ -74,12 +66,23 @@ client.on("interactionCreate", async (interaction) => {
 
   if (interaction.member.roles.cache.has(roleID)) {
     await interaction.member.roles.remove(role);
-    interaction.reply({ content: `❌ Role **${role.name}** odebrána.`, ephemeral: true });
+    return interaction.reply({ content: `❌ Role **${role.name}** odebrána.`, ephemeral: true });
   } else {
     await interaction.member.roles.add(role);
-    interaction.reply({ content: `✅ Role **${role.name}** přidána.`, ephemeral: true });
+    return interaction.reply({ content: `✅ Role **${role.name}** přidána.`, ephemeral: true });
   }
 });
 
-// Start bota
+// ---- Log ve konzoli po přihlášení ----
+client.on("ready", () => {
+  console.log(`✅ Bot je online jako ${client.user.tag}`);
+});
+
+// ---- Railway prevent sleep (správný port) ----
+const PORT = process.env.PORT || 3000;
+http.createServer((req, res) => res.end("Bot je online")).listen(PORT, () => {
+  console.log(`🌍 Server běží na portu ${PORT}`);
+});
+
+// ---- Login ----
 client.login(process.env.TOKEN);
