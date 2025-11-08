@@ -1,5 +1,4 @@
 require("dotenv").config();
-const http = require("http");
 const {
   Client,
   GatewayIntentBits,
@@ -20,7 +19,12 @@ const client = new Client({
   partials: [Partials.Message, Partials.Channel, Partials.Reaction]
 });
 
-// ---- Uvítací zpráva ----
+// Když se bot připojí
+client.on("ready", () => {
+  console.log(`✅ Bot je online jako ${client.user.tag}`);
+});
+
+// Uvítací zpráva
 client.on("guildMemberAdd", (member) => {
   const channel = member.guild.channels.cache.get(process.env.WELCOME_CHANNEL);
   if (!channel) return;
@@ -34,7 +38,7 @@ client.on("guildMemberAdd", (member) => {
   channel.send({ embeds: [embed] });
 });
 
-// ---- Nastavení tlačítkových rolí ----
+// Tlačítka pro role
 client.on("messageCreate", (msg) => {
   if (msg.content === "!setroles") {
     if (msg.channel.id !== process.env.ROLE_CHANNEL) {
@@ -55,7 +59,7 @@ client.on("messageCreate", (msg) => {
   }
 });
 
-// ---- Interakce s tlačítky ----
+// Reakce na kliknutí
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
@@ -66,23 +70,12 @@ client.on("interactionCreate", async (interaction) => {
 
   if (interaction.member.roles.cache.has(roleID)) {
     await interaction.member.roles.remove(role);
-    return interaction.reply({ content: `❌ Role **${role.name}** odebrána.`, ephemeral: true });
+    interaction.reply({ content: `❌ Role **${role.name}** odebrána.`, ephemeral: true });
   } else {
     await interaction.member.roles.add(role);
-    return interaction.reply({ content: `✅ Role **${role.name}** přidána.`, ephemeral: true });
+    interaction.reply({ content: `✅ Role **${role.name}** přidána.`, ephemeral: true });
   }
 });
 
-// ---- Log ve konzoli po přihlášení ----
-client.on("ready", () => {
-  console.log(`✅ Bot je online jako ${client.user.tag}`);
-});
-
-// ---- Railway prevent sleep (správný port) ----
-const PORT = process.env.PORT || 3000;
-http.createServer((req, res) => res.end("Bot je online")).listen(PORT, () => {
-  console.log(`🌍 Server běží na portu ${PORT}`);
-});
-
-// ---- Login ----
+// Přihlášení bota
 client.login(process.env.TOKEN);
