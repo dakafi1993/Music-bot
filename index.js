@@ -1,4 +1,14 @@
 require("dotenv").config();
+
+// Express server PRVNÍ - pro Railway health checks
+const express = require("express");
+const app = express();
+const PORT = process.env.PORT || 8080;
+
+app.get("/", (req, res) => res.send("Bot běží."));
+app.listen(PORT, () => console.log(`🌍 Server běží na portu ${PORT}`));
+
+// Teď Discord bot
 const {
   Client,
   GatewayIntentBits,
@@ -86,11 +96,3 @@ client.on("interactionCreate", async (interaction) => {
 
 // Přihlášení bota
 client.login(process.env.TOKEN);
-
-// Express server pro Railway health checks
-const express = require("express");
-const app = express();
-const PORT = process.env.PORT || 8080;
-
-app.get("/", (req, res) => res.send("Bot běží."));
-app.listen(PORT, () => console.log(`🌍 Server běží na portu ${PORT}`));
