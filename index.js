@@ -25,6 +25,11 @@ client.on("ready", () => {
   console.log(`✅ Bot je online jako ${client.user.tag}`);
   console.log(`🔍 Intents: ${client.options.intents.bitfield}`);
   console.log(`📡 Připraven sledovat zprávy...`);
+  
+  // Keep-alive pro Railway
+  setInterval(() => {
+    console.log(`💓 Bot běží... (${new Date().toLocaleTimeString()})`);
+  }, 60000); // Každou minutu
 });
 
 // Uvítací zpráva
