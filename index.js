@@ -1,5 +1,18 @@
 require("dotenv").config();
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Partials } = require("discord.js");
+
+// Mini webserver, aby Railway nepřestalo botovi kroutit krkem
+const http = require("http");
+http.createServer((req, res) => res.end("Bot je online")).listen(3000);
+
+const {
+  Client,
+  GatewayIntentBits,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  Partials
+} = require("discord.js");
 
 const client = new Client({
   intents: [
@@ -9,6 +22,11 @@ const client = new Client({
     GatewayIntentBits.MessageContent
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction]
+});
+
+// Bot online
+client.on("ready", () => {
+  console.log(`✅ Bot je online jako ${client.user.tag}`);
 });
 
 // Uvítací zpráva
@@ -25,10 +43,11 @@ client.on("guildMemberAdd", (member) => {
   channel.send({ embeds: [embed] });
 });
 
-// Tlačítkové role
+// Role tlačítka
 client.on("messageCreate", (msg) => {
   if (msg.content === "!setroles") {
-    if (msg.channel.id !== process.env.ROLE_CHANNEL) return msg.reply("Použij to ve správném kanálu.");
+    if (msg.channel.id !== process.env.ROLE_CHANNEL)
+      return msg.reply("Použij to ve správném kanálu.");
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("cs2").setLabel("CS2 💀").setStyle(ButtonStyle.Primary),
@@ -44,10 +63,11 @@ client.on("messageCreate", (msg) => {
   }
 });
 
+// Reakce na tlačítka
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
-  let roleID = process.env[`ROLE_${interaction.customId.toUpperCase()}`];
+  const roleID = process.env[`ROLE_${interaction.customId.toUpperCase()}`];
   if (!roleID) return;
 
   const role = interaction.guild.roles.cache.get(roleID);
@@ -61,6 +81,5 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-// LOGIN
-client.on("ready", () => console.log(`✅ Bot je online jako ${client.user.tag}`));
+// Start bota
 client.login(process.env.TOKEN);
