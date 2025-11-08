@@ -26,11 +26,6 @@ client.on("ready", () => {
   console.log(`📡 Připraven sledovat zprávy...`);
 });
 
-// TEST - loguj VŠECHNY zprávy
-client.on("messageCreate", (msg) => {
-  console.log(`📨 Zpráva od ${msg.author.tag}: "${msg.content}"`);
-});
-
 // Uvítací zpráva
 client.on("guildMemberAdd", (member) => {
   const channel = member.guild.channels.cache.get(process.env.WELCOME_CHANNEL);
@@ -45,8 +40,11 @@ client.on("guildMemberAdd", (member) => {
   channel.send({ embeds: [embed] });
 });
 
-// Tlačítka pro role
+// Příkazy a logování zpráv
 client.on("messageCreate", (msg) => {
+  // Debug log pro všechny zprávy
+  console.log(`📨 [${msg.channel.name}] ${msg.author.tag}: "${msg.content}"`);
+  
   if (msg.author.bot) return; // Ignoruj boty
   
   if (msg.content === "!setroles") {
