@@ -22,6 +22,8 @@ const client = new Client({
 // Když se bot připojí
 client.on("ready", () => {
   console.log(`✅ Bot je online jako ${client.user.tag}`);
+  console.log(`🔍 Intents: ${client.options.intents.bitfield}`);
+  console.log(`📡 Připraven sledovat zprávy...`);
 });
 
 // TEST - loguj VŠECHNY zprávy
