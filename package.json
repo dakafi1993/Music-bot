@@ -12,9 +12,10 @@
   "license": "ISC",
   "dependencies": {
     "discord.js": "^14.14.1",
-    "erela.js": "^2.4.0",
-    "erela.js-spotify": "^1.2.0",
-    "dotenv": "^16.3.1"
+    "discord-player": "^6.6.6",
+    "@discord-player/extractor": "^4.4.5",
+    "dotenv": "^16.3.1",
+    "mediaplex": "^0.0.9"
   },
   "engines": {
     "node": ">=18.0.0"
