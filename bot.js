@@ -74,19 +74,23 @@ client.on('interactionCreate', async interaction => {
 
         try {
             let url = query;
+            let video;
             
             // If not a URL, search YouTube
             if (!query.startsWith('http')) {
-                const searched = await play.search(query, { limit: 1 });
+                console.log('Searching for:', query);
+                const searched = await play.search(query, { limit: 1, source: { youtube: 'video' } });
                 if (!searched || !searched[0]) {
                     return interaction.editReply('❌ Nenalezeny žádné výsledky!');
                 }
                 url = searched[0].url;
+                video = searched[0];
+            } else {
+                // Validate YouTube URL
+                console.log('Validating URL:', url);
+                const yt_info = await play.video_info(url);
+                video = yt_info.video_details;
             }
-
-            // Validate URL
-            const yt_info = await play.video_info(url);
-            const video = yt_info.video_details;
 
             let queue = queues.get(interaction.guild.id);
 
@@ -126,10 +130,10 @@ client.on('interactionCreate', async interaction => {
             }
 
             queue.songs.push({
-                title: video.title,
+                title: video.title || video.name,
                 url: url,
-                duration: video.durationInSec,
-                thumbnail: video.thumbnails[0].url
+                duration: video.durationInSec || 0,
+                thumbnail: video.thumbnails ? video.thumbnails[0].url : null
             });
 
             if (queue.songs.length === 1) {
