@@ -233,21 +233,17 @@ async function playSong(queue) {
     console.log('Přehrávám:', song.title);
     
     try {
-        // Použití yt-dlp místo ytdl-core
-        const info = await youtubedl(song.url, {
-            dumpSingleJson: true,
+        // Stáhnout audio přímo přes yt-dlp pipe
+        const stream = youtubedl.exec(song.url, {
+            output: '-',
+            format: 'bestaudio',
             noCheckCertificates: true,
             noWarnings: true,
-            preferFreeFormats: true,
             addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
         });
 
-        // Získání best audio streamu
-        const audioUrl = info.url;
-        
-        const resource = createAudioResource(audioUrl, {
-            inputType: StreamType.Arbitrary,
-            inlineVolume: true
+        const resource = createAudioResource(stream, {
+            inputType: StreamType.Arbitrary
         });
         
         queue.player.play(resource);
