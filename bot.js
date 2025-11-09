@@ -286,6 +286,7 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Nic nehraje!', ephemeral: true });
         }
 
+        // Jen zastavit player - Idle handler se postará o zbytek
         queue.player.stop();
         return interaction.reply('⏭️ Přeskočeno!');
     }
@@ -301,16 +302,15 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Žádná předchozí skladba!', ephemeral: true });
         }
 
-        // Vrátit aktuální skladbu zpět do fronty
-        if (queue.songs.length > 0) {
-            queue.songs.unshift(queue.songs[0]);
-        }
-
-        // Vzít poslední skladbu z historie a dát ji na začátek fronty
+        // Vzít předchozí skladbu z historie
         const previousSong = queue.history.pop();
+        
+        // Aktuální skladba zůstane v queue.songs[0]
+        // Vložit předchozí skladbu před aktuální
         queue.songs.unshift(previousSong);
 
-        queue.player.stop(); // Zastaví aktuální a spustí předchozí
+        // Zastavit player - Idle handler se postará o přehrání
+        queue.player.stop();
         return interaction.reply('⏮️ Vracím se na předchozí skladbu!');
     }
 
