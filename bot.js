@@ -3,6 +3,15 @@ const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('disco
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus } = require('@discordjs/voice');
 const play = require('play-dl');
 
+// Initialize play-dl
+(async () => {
+    await play.getFreeClientID().then((clientID) => play.setToken({
+        soundcloud : {
+            client_id : clientID
+        }
+    }));
+})();
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
