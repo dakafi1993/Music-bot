@@ -227,8 +227,10 @@ client.on('interactionCreate', async interaction => {
 
 async function playSong(queue) {
     const song = queue.songs[0];
+    console.log('playSong called with song:', JSON.stringify(song));
     
     try {
+        console.log('Attempting to stream URL:', song.url);
         const stream = await play.stream(song.url);
         const resource = createAudioResource(stream.stream, {
             inputType: stream.type
