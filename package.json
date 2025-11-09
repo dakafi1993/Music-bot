@@ -25,7 +25,6 @@
     "libsodium-wrappers": "^0.7.15",
     "mediaplex": "^0.0.9",
     "opusscript": "^0.0.8",
-    "sodium-native": "^5.0.9",
     "tweetnacl": "^1.0.3"
   },
   "engines": {
