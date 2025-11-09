@@ -12,10 +12,7 @@ const client = new Client({
 
 // Vytvoření DisTube instance
 const distube = new DisTube(client, {
-    emitNewSongOnly: true,
-    leaveOnEmpty: true,
-    leaveOnFinish: false,
-    leaveOnStop: true
+    emitNewSongOnly: true
 });
 
 const commands = [
