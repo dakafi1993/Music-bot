@@ -2,10 +2,10 @@
   "name": "discord-music-bot",
   "version": "1.0.0",
   "description": "Discord music bot with Lavalink integration",
-  "main": "index.js",
+  "main": "bot.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node index.js"
+    "start": "node bot.js",
+    "dev": "node bot.js"
   },
   "keywords": [
     "discord",
