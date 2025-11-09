@@ -8,6 +8,13 @@ Přehraje skladbu z YouTube
 - **Příklad:** `/play https://www.youtube.com/watch?v=4ybLPVcwBdA`
 - Bot automaticky vyhledá skladbu nebo použije přímý YouTube link
 
+### `/playlist <URL>`
+Přehraje celý YouTube playlist
+- **Příklad:** `/playlist https://www.youtube.com/playlist?list=PLxxxxxxx`
+- Přidá všechny skladby z playlistu do fronty
+- Automaticky začne přehrávat první skladbu
+- Zobrazí prvních 5 skladeb a celkový počet
+
 ### `/skip`
 Přeskočí aktuální skladbu
 - Přejde na další skladbu ve frontě
@@ -49,6 +56,7 @@ Zobrazí aktuálně přehrávanou skladbu
 Bot podporuje:
 - ✅ YouTube vyhledávání
 - ✅ Přímé YouTube URL
+- ✅ YouTube playlisty (celé fronty najednou)
 - ✅ Frontu skladeb
 - ✅ Přeskakování skladeb
 - ✅ Zobrazení fronty
