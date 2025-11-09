@@ -85,9 +85,15 @@ distube.on('finish', queue => {
 
 // Slash příkazy
 client.on('interactionCreate', async interaction => {
-    if (!interaction.isCommand()) return;
+    console.log('Interaction received:', interaction.type, interaction.commandName);
+    
+    if (!interaction.isChatInputCommand()) {
+        console.log('Not a chat input command, ignoring');
+        return;
+    }
 
     const { commandName } = interaction;
+    console.log('Processing command:', commandName);
 
     if (commandName === 'play') {
         const query = interaction.options.getString('query');
