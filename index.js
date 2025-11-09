@@ -1,82 +1,162 @@
-require('dotenv').config();require('dotenv').config();
+require('dotenv').config();require('dotenv').config();require('dotenv').config();
 
-const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
 
-const { Player } = require('discord-player');const { Manager } = require('erela.js');
+const { Player } = require('discord-player');const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
 
 
 
-// Environment variables validation// Environment variables validation
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;const { Player } = require('discord-player');const { Manager } = require('erela.js');
 
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 
-const LAVALINK_HOST = process.env.LAVALINK_HOST;
 
-if (!DISCORD_TOKEN || !DISCORD_CLIENT_ID) {const LAVALINK_PORT = process.env.LAVALINK_PORT || '2333';
+if (!DISCORD_TOKEN || !DISCORD_CLIENT_ID) {
 
-    console.error('❌ Missing required environment variables!');const LAVALINK_PASSWORD = process.env.LAVALINK_PASSWORD;
+    console.error('❌ Missing required environment variables!');// Environment variables validation// Environment variables validation
 
     console.error('Required: DISCORD_TOKEN, DISCORD_CLIENT_ID');
 
-    process.exit(1);if (!DISCORD_TOKEN || !DISCORD_CLIENT_ID || !LAVALINK_HOST || !LAVALINK_PASSWORD) {
+    process.exit(1);const DISCORD_TOKEN = process.env.DISCORD_TOKEN;const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-}    console.error('❌ Missing required environment variables!');
+}
 
-    console.error('Required: DISCORD_TOKEN, DISCORD_CLIENT_ID, LAVALINK_HOST, LAVALINK_PASSWORD');
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 
-// Initialize Discord client    process.exit(1);
+const client = new Client({
 
-const client = new Client({}
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildMessages]const LAVALINK_HOST = process.env.LAVALINK_HOST;
 
-    intents: [
+});
 
-        GatewayIntentBits.Guilds,// Initialize Discord client
+if (!DISCORD_TOKEN || !DISCORD_CLIENT_ID) {const LAVALINK_PORT = process.env.LAVALINK_PORT || '2333';
 
-        GatewayIntentBits.GuildVoiceStates,const client = new Client({
+const player = new Player(client);
 
-        GatewayIntentBits.GuildMessages    intents: [
+player.extractors.loadDefault();    console.error('❌ Missing required environment variables!');const LAVALINK_PASSWORD = process.env.LAVALINK_PASSWORD;
 
-    ]        GatewayIntentBits.Guilds,
+
+
+const commands = [    console.error('Required: DISCORD_TOKEN, DISCORD_CLIENT_ID');
+
+    { name: 'play', description: 'Play a song', options: [{ name: 'query', type: 3, description: 'Song URL or search', required: true }] },
+
+    { name: 'pause', description: 'Pause the current song' },    process.exit(1);if (!DISCORD_TOKEN || !DISCORD_CLIENT_ID || !LAVALINK_HOST || !LAVALINK_PASSWORD) {
+
+    { name: 'resume', description: 'Resume the paused song' },
+
+    { name: 'skip', description: 'Skip the current song' },}    console.error('❌ Missing required environment variables!');
+
+    { name: 'queue', description: 'Show the current queue' },
+
+    { name: 'nowplaying', description: 'Show currently playing song' },    console.error('Required: DISCORD_TOKEN, DISCORD_CLIENT_ID, LAVALINK_HOST, LAVALINK_PASSWORD');
+
+    { name: 'stop', description: 'Stop and clear queue' },
+
+    { name: 'leave', description: 'Leave voice channel' },// Initialize Discord client    process.exit(1);
+
+    { name: 'volume', description: 'Set volume', options: [{ name: 'level', type: 4, description: 'Volume 0-100', required: true }] }
+
+];const client = new Client({}
+
+
+
+async function registerCommands() {    intents: [
+
+    try {
+
+        const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);        GatewayIntentBits.Guilds,// Initialize Discord client
+
+        console.log('🔄 Registering slash commands...');
+
+        await rest.put(Routes.applicationCommands(DISCORD_CLIENT_ID), { body: commands });        GatewayIntentBits.GuildVoiceStates,const client = new Client({
+
+        console.log('✅ Slash commands registered successfully!');
+
+    } catch (error) {        GatewayIntentBits.GuildMessages    intents: [
+
+        console.error('❌ Error registering commands:', error);
+
+    }    ]        GatewayIntentBits.Guilds,
+
+}
 
 });        GatewayIntentBits.GuildVoiceStates,
 
-        GatewayIntentBits.GuildMessages
+player.events.on('playerStart', (queue, track) => {
+
+    queue.metadata.channel.send({ embeds: [new EmbedBuilder().setColor('#00FF00').setTitle('🎵 Now Playing').setDescription(`[${track.title}](${track.url})`).addFields({ name: 'Author', value: track.author, inline: true }, { name: 'Duration', value: track.duration, inline: true })] });        GatewayIntentBits.GuildMessages
+
+});
 
 // Initialize discord-player    ]
 
-const player = new Player(client);});
+player.events.on('emptyQueue', (queue) => queue.metadata.channel.send('✅ Queue ended!'));
+
+player.events.on('error', (queue, error) => { console.error('❌ Player error:', error); queue.metadata.channel.send('❌ Error playing music!'); });const player = new Player(client);});
 
 
 
-// Load extractors// Initialize Erela.js Manager
+client.once('ready', () => { console.log(`✅ Bot logged in as ${client.user.tag}`); registerCommands(); });
 
-player.extractors.loadDefault();const manager = new Manager({
 
-    nodes: [
 
-// Slash commands definition        {
+client.on('interactionCreate', async interaction => {// Load extractors// Initialize Erela.js Manager
 
-const commands = [            host: LAVALINK_HOST,
+    if (!interaction.isChatInputCommand()) return;
 
-    {            port: parseInt(LAVALINK_PORT),
+    const { commandName, options, member, guild, channel } = interaction;player.extractors.loadDefault();const manager = new Manager({
 
-        name: 'play',            password: LAVALINK_PASSWORD,
+    const voiceChannel = member.voice.channel;
+
+        nodes: [
+
+    if (commandName === 'play') {
+
+        if (!voiceChannel) return interaction.reply({ content: '❌ Join a voice channel!', ephemeral: true });// Slash commands definition        {
+
+        const query = options.getString('query');
+
+        await interaction.deferReply();const commands = [            host: LAVALINK_HOST,
+
+        try {
+
+            const { track } = await player.play(voiceChannel, query, { nodeOptions: { metadata: { channel: interaction.channel, client: interaction.guild?.members.me, requestedBy: interaction.user } } });    {            port: parseInt(LAVALINK_PORT),
+
+            return interaction.editReply({ embeds: [new EmbedBuilder().setColor('#0099ff').setTitle('📝 Added to Queue').setDescription(`[${track.title}](${track.url})`).addFields({ name: 'Author', value: track.author, inline: true }, { name: 'Duration', value: track.duration, inline: true })] });
+
+        } catch (error) { console.error(error); return interaction.editReply({ content: '❌ Could not play!' }); }        name: 'play',            password: LAVALINK_PASSWORD,
+
+    }
 
         description: 'Play a song from URL or search query',            secure: parseInt(LAVALINK_PORT) === 443
 
-        options: [{        }
+    const queue = player.nodes.get(guild.id);
 
-            name: 'query',    ],
+    if (commandName === 'pause') { if (!queue?.isPlaying()) return interaction.reply({ content: '❌ Nothing playing!', ephemeral: true }); if (!voiceChannel || voiceChannel.id !== queue.channel.id) return interaction.reply({ content: '❌ Same channel!', ephemeral: true }); queue.node.pause(); interaction.reply('⏸️ Paused!'); }        options: [{        }
 
-            type: 3,    send: (id, payload) => {
+    if (commandName === 'resume') { if (!queue?.node.isPaused()) return interaction.reply({ content: '❌ Nothing paused!', ephemeral: true }); if (!voiceChannel || voiceChannel.id !== queue.channel.id) return interaction.reply({ content: '❌ Same channel!', ephemeral: true }); queue.node.resume(); interaction.reply('▶️ Resumed!'); }
 
-            description: 'Song URL or search query',        const guild = client.guilds.cache.get(id);
+    if (commandName === 'skip') { if (!queue?.isPlaying()) return interaction.reply({ content: '❌ Nothing playing!', ephemeral: true }); if (!voiceChannel || voiceChannel.id !== queue.channel.id) return interaction.reply({ content: '❌ Same channel!', ephemeral: true }); const current = queue.currentTrack; queue.node.skip(); interaction.reply(`⏭️ Skipped **${current.title}**`); }            name: 'query',    ],
 
-            required: true        if (guild) guild.shard.send(payload);
+    if (commandName === 'stop') { if (!queue) return interaction.reply({ content: '❌ Nothing playing!', ephemeral: true }); if (!voiceChannel || voiceChannel.id !== queue.channel.id) return interaction.reply({ content: '❌ Same channel!', ephemeral: true }); queue.delete(); interaction.reply('⏹️ Stopped!'); }
 
-        }]    }
+    if (commandName === 'leave') { if (!queue) return interaction.reply({ content: '❌ Not in channel!', ephemeral: true }); if (!voiceChannel || voiceChannel.id !== queue.channel.id) return interaction.reply({ content: '❌ Same channel!', ephemeral: true }); queue.delete(); interaction.reply('👋 Left!'); }            type: 3,    send: (id, payload) => {
+
+    if (commandName === 'queue') { if (!queue?.currentTrack) return interaction.reply({ content: '❌ Nothing playing!', ephemeral: true }); const tracks = queue.tracks.toArray(); interaction.reply({ embeds: [new EmbedBuilder().setColor('#0099ff').setTitle('📋 Queue').setDescription(`**Now:**\n[${queue.currentTrack.title}](${queue.currentTrack.url}) - ${queue.currentTrack.duration}\n\n` + (tracks.length ? `**Next:**\n${tracks.slice(0, 10).map((t, i) => `${i + 1}. [${t.title}](${t.url}) - ${t.duration}`).join('\n')}` : '**Empty**') + (tracks.length > 10 ? `\n\n*...and ${tracks.length - 10} more*` : ''))] }); }
+
+    if (commandName === 'nowplaying') { if (!queue?.currentTrack) return interaction.reply({ content: '❌ Nothing playing!', ephemeral: true }); const track = queue.currentTrack; interaction.reply({ embeds: [new EmbedBuilder().setColor('#00FF00').setTitle('🎵 Now Playing').setDescription(`[${track.title}](${track.url})`).addFields({ name: 'Author', value: track.author, inline: true }, { name: 'Duration', value: track.duration, inline: true }, { name: 'Progress', value: queue.node.createProgressBar(), inline: false })] }); }            description: 'Song URL or search query',        const guild = client.guilds.cache.get(id);
+
+    if (commandName === 'volume') { if (!queue) return interaction.reply({ content: '❌ Nothing playing!', ephemeral: true }); if (!voiceChannel || voiceChannel.id !== queue.channel.id) return interaction.reply({ content: '❌ Same channel!', ephemeral: true }); const volume = options.getInteger('level'); if (volume < 0 || volume > 100) return interaction.reply({ content: '❌ Volume 0-100!', ephemeral: true }); queue.node.setVolume(volume); interaction.reply(`🔊 Volume **${volume}%**`); }
+
+});            required: true        if (guild) guild.shard.send(payload);
+
+
+
+process.on('unhandledRejection', error => console.error('Unhandled rejection:', error));        }]    }
+
+client.login(DISCORD_TOKEN);
 
     },});
 
