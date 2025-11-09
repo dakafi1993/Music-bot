@@ -131,7 +131,8 @@ client.on('interactionCreate', async interaction => {
                     player,
                     songs: [],
                     history: [], // Historie přehraných skladeb
-                    textChannel: interaction.channel
+                    textChannel: interaction.channel,
+                    skipToHistory: true // Flag - přidat dokončenou skladbu do historie
                 };
 
                 queues.set(interaction.guild.id, queue);
@@ -142,10 +143,13 @@ client.on('interactionCreate', async interaction => {
                 // Po skončení skladby
                 player.on(AudioPlayerStatus.Idle, () => {
                     const finished = queue.songs.shift();
-                    if (finished) {
-                        queue.history.push(finished); // Přidat do historie
+                    // Přidat do historie jen pokud skipToHistory je true
+                    if (finished && queue.skipToHistory) {
+                        queue.history.push(finished);
                         if (queue.history.length > 10) queue.history.shift(); // Max 10 v historii
                     }
+                    queue.skipToHistory = true; // Reset na true pro další skladby
+                    
                     if (queue.songs.length > 0) {
                         playSong(queue);
                     } else {
@@ -222,7 +226,8 @@ client.on('interactionCreate', async interaction => {
                     player,
                     songs: [],
                     history: [], // Historie přehraných skladeb
-                    textChannel: interaction.channel
+                    textChannel: interaction.channel,
+                    skipToHistory: true // Flag - přidat dokončenou skladbu do historie
                 };
 
                 queues.set(interaction.guild.id, queue);
@@ -231,10 +236,13 @@ client.on('interactionCreate', async interaction => {
 
                 player.on(AudioPlayerStatus.Idle, () => {
                     const finished = queue.songs.shift();
-                    if (finished) {
+                    // Přidat do historie jen pokud skipToHistory je true
+                    if (finished && queue.skipToHistory) {
                         queue.history.push(finished);
                         if (queue.history.length > 10) queue.history.shift();
                     }
+                    queue.skipToHistory = true; // Reset na true pro další skladby
+                    
                     if (queue.songs.length > 0) {
                         playSong(queue);
                     } else {
@@ -305,11 +313,13 @@ client.on('interactionCreate', async interaction => {
         // Vzít předchozí skladbu z historie
         const previousSong = queue.history.pop();
         
-        // Aktuální skladba zůstane v queue.songs[0]
         // Vložit předchozí skladbu před aktuální
         queue.songs.unshift(previousSong);
 
-        // Zastavit player - Idle handler se postará o přehrání
+        // Nastavit flag - NEpřidávat aktuální skladbu do historie
+        queue.skipToHistory = false;
+
+        // Zastavit player - Idle handler přeskočí aktuální a spustí předchozí
         queue.player.stop();
         return interaction.reply('⏮️ Vracím se na předchozí skladbu!');
     }
