@@ -232,7 +232,7 @@ async function playSong(queue) {
     
     try {
         // Stáhnout audio přímo přes yt-dlp pipe
-        const stream = youtubedl.exec(song.url, {
+        const process = youtubedl.exec(song.url, {
             output: '-',
             format: 'bestaudio',
             noCheckCertificates: true,
@@ -240,7 +240,7 @@ async function playSong(queue) {
             addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
         });
 
-        const resource = createAudioResource(stream, {
+        const resource = createAudioResource(process.stdout, {
             inputType: StreamType.Arbitrary
         });
         
