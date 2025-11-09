@@ -1,8 +1,8 @@
-[build]
-builder = "nixpacks"
+[phases.setup]
+nixPkgs = ['nodejs_22', 'libsodium']
 
-[build.nixpacksCommands]
-install = "npm install"
+[phases.install]
+cmds = ['npm ci']
 
 [start]
-cmd = "npm start"
+cmd = 'npm start'
