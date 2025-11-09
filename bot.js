@@ -80,7 +80,7 @@ client.on('interactionCreate', async interaction => {
             let video;
 
             // Pokud není URL, hledej na YouTube
-            if (!ytdl.validateURL(query)) {
+            if (!query.startsWith('http')) {
                 console.log('Hledám:', query);
                 const results = await yts.search(query, { limit: 1, type: 'video' });
                 
@@ -93,12 +93,10 @@ client.on('interactionCreate', async interaction => {
                 console.log('Našel jsem:', video.title, url);
             } else {
                 console.log('Použitá URL:', url);
-                const info = await ytdl.getInfo(url);
                 video = {
-                    title: info.videoDetails.title,
+                    title: query,
                     url: url,
-                    durationFormatted: new Date(info.videoDetails.lengthSeconds * 1000).toISOString().substr(11, 8),
-                    thumbnail: info.videoDetails.thumbnails[0].url
+                    thumbnail: null
                 };
             }
 
