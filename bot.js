@@ -27,6 +27,16 @@ const commands = [
         }]
     },
     {
+        name: 'playlist',
+        description: 'Přehraje YouTube playlist',
+        options: [{
+            name: 'url',
+            type: 3,
+            description: 'URL YouTube playlistu',
+            required: true
+        }]
+    },
+    {
         name: 'skip',
         description: 'Přeskočí aktuální skladbu'
     },
@@ -159,6 +169,98 @@ client.on('interactionCreate', async interaction => {
             return interaction.editReply({ embeds: [embed] });
         } catch (error) {
             console.error('Chyba při přehrávání:', error);
+            return interaction.editReply(`❌ Chyba: ${error.message}`);
+        }
+    }
+
+    if (commandName === 'playlist') {
+        const playlistUrl = interaction.options.getString('url');
+        const voiceChannel = interaction.member.voice.channel;
+
+        if (!voiceChannel) {
+            return interaction.reply({ content: '❌ Musíš být v hlasovém kanálu!', ephemeral: true });
+        }
+
+        await interaction.deferReply();
+
+        try {
+            console.log('Načítám playlist:', playlistUrl);
+            
+            // Získat informace o playlistu přes yt-dlp
+            const playlistInfo = await youtubedl(playlistUrl, {
+                dumpSingleJson: true,
+                flatPlaylist: true,
+                noWarnings: true
+            });
+
+            if (!playlistInfo.entries || playlistInfo.entries.length === 0) {
+                return interaction.editReply('❌ Playlist je prázdný nebo nebyl nalezen!');
+            }
+
+            let queue = queues.get(interaction.guild.id);
+
+            if (!queue) {
+                const connection = joinVoiceChannel({
+                    channelId: voiceChannel.id,
+                    guildId: interaction.guild.id,
+                    adapterCreator: interaction.guild.voiceAdapterCreator,
+                });
+
+                const player = createAudioPlayer();
+
+                queue = {
+                    connection,
+                    player,
+                    songs: [],
+                    textChannel: interaction.channel
+                };
+
+                queues.set(interaction.guild.id, queue);
+
+                connection.subscribe(player);
+
+                player.on(AudioPlayerStatus.Idle, () => {
+                    queue.songs.shift();
+                    if (queue.songs.length > 0) {
+                        playSong(queue);
+                    } else {
+                        queue.textChannel.send('✅ Fronta je prázdná!');
+                    }
+                });
+
+                player.on('error', error => {
+                    console.error('Chyba přehrávače:', error);
+                    queue.textChannel.send(`❌ Chyba: ${error.message}`);
+                });
+            }
+
+            // Přidat všechny skladby z playlistu do fronty
+            const addedSongs = [];
+            for (const entry of playlistInfo.entries) {
+                if (entry.url) {
+                    queue.songs.push({
+                        title: entry.title || 'Neznámý název',
+                        url: entry.url.startsWith('http') ? entry.url : `https://www.youtube.com/watch?v=${entry.id}`,
+                        thumbnail: entry.thumbnail || null
+                    });
+                    addedSongs.push(entry.title || 'Neznámý název');
+                }
+            }
+
+            const wasEmpty = queue.songs.length === addedSongs.length;
+            if (wasEmpty) {
+                await playSong(queue);
+            }
+
+            const embed = new EmbedBuilder()
+                .setColor('#00ff00')
+                .setTitle('📜 Playlist přidán')
+                .setDescription(`Přidáno **${addedSongs.length}** skladeb\n\n${addedSongs.slice(0, 5).map((s, i) => `${i + 1}. ${s}`).join('\n')}${addedSongs.length > 5 ? `\n...a dalších ${addedSongs.length - 5} skladeb` : ''}`)
+                .setFooter({ text: `Celkem skladeb ve frontě: ${queue.songs.length}` });
+
+            return interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+            console.error('Chyba při načítání playlistu:', error);
             return interaction.editReply(`❌ Chyba: ${error.message}`);
         }
     }
