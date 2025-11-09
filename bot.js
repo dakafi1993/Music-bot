@@ -89,10 +89,13 @@ client.on('interactionCreate', async interaction => {
             if (!query.startsWith('http')) {
                 console.log('Searching for:', query);
                 const searched = await play.search(query, { limit: 1, source: { youtube: 'video' } });
+                console.log('Search results:', searched);
                 if (!searched || !searched[0]) {
                     return interaction.editReply('❌ Nenalezeny žádné výsledky!');
                 }
-                url = searched[0].url;
+                video = searched[0];
+                url = video.url;
+                console.log('Found video:', video.title, 'URL:', url);
                 video = searched[0];
             } else {
                 // Validate YouTube URL
