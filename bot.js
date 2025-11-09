@@ -231,17 +231,27 @@ async function playSong(queue) {
     console.log('Přehrávám:', song.title);
     
     try {
-        // Stáhnout audio přímo přes yt-dlp pipe
-        const process = youtubedl.exec(song.url, {
-            output: '-',
-            format: 'bestaudio',
-            noCheckCertificates: true,
+        // Použít yt-dlp pro získání URL a pak streamovat přes ffmpeg
+        const info = await youtubedl(song.url, {
+            dumpSingleJson: true,
             noWarnings: true,
-            addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
+            noCheckCertificates: true,
+            preferFreeFormats: true,
+            format: 'bestaudio/best'
         });
 
-        const resource = createAudioResource(process.stdout, {
-            inputType: StreamType.Arbitrary
+        // Získat nejlepší audio URL
+        const audioUrl = info.url || info.formats?.find(f => f.acodec !== 'none')?.url;
+        
+        if (!audioUrl) {
+            throw new Error('Nepodařilo se získat audio URL');
+        }
+
+        console.log('Streamuji z:', audioUrl.substring(0, 50) + '...');
+
+        const resource = createAudioResource(audioUrl, {
+            inputType: StreamType.Arbitrary,
+            inlineVolume: true
         });
         
         queue.player.play(resource);
