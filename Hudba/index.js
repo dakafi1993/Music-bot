@@ -31,7 +31,7 @@ const manager = new Manager({
             host: LAVALINK_HOST,
             port: parseInt(LAVALINK_PORT),
             password: LAVALINK_PASSWORD,
-            secure: LAVALINK_HOST.includes('railway.app') || LAVALINK_HOST.includes('https')
+            secure: parseInt(LAVALINK_PORT) === 443
         }
     ],
     send: (id, payload) => {
