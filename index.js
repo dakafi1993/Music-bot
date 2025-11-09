@@ -53,10 +53,18 @@ client.on("interactionCreate", async (interaction) => {
     
     if (interaction.member.roles.cache.has(roleID)) {
       await interaction.member.roles.remove(role);
-      await interaction.reply({ content: "❌ Role **" + role.name + "** odebrána", ephemeral: true });
+      await interaction.reply({ 
+        content: `${interaction.user} odebral(a) si roli **${role.name}**`, 
+        ephemeral: false 
+      });
+      console.log(`✅ ${interaction.user.tag} odebral roli ${role.name}`);
     } else {
       await interaction.member.roles.add(role);
-      await interaction.reply({ content: "✅ Role **" + role.name + "** přidána", ephemeral: true });
+      await interaction.reply({ 
+        content: `${interaction.user} přidal(a) si roli **${role.name}**`, 
+        ephemeral: false 
+      });
+      console.log(`✅ ${interaction.user.tag} přidal roli ${role.name}`);
     }
   } catch (error) {
     console.error("❌ Error:", error);
