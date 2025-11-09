@@ -20,8 +20,8 @@ const client = new Client({
   partials: [Partials.Message, Partials.Channel, Partials.Reaction]
 });
 
-// Když se bot připojí
-client.on("ready", () => {
+// Když se bot připojí (používáme clientReady místo ready)
+client.once("clientReady", () => {
   console.log(`✅ Bot je online jako ${client.user.tag}`);
   console.log(`🔍 Intents: ${client.options.intents.bitfield}`);
   console.log(`📡 Připraven sledovat zprávy...`);
@@ -30,6 +30,21 @@ client.on("ready", () => {
   setInterval(() => {
     console.log(`💓 Bot běží... (${new Date().toLocaleTimeString()})`);
   }, 60000); // Každou minutu
+});
+
+// Error handling
+client.on("error", (error) => {
+  console.error("❌ Discord client error:", error);
+});
+
+process.on("unhandledRejection", (error) => {
+  console.error("❌ Unhandled promise rejection:", error);
+});
+
+process.on("SIGTERM", () => {
+  console.log("⚠️ SIGTERM received, shutting down gracefully...");
+  client.destroy();
+  process.exit(0);
 });
 
 // Uvítací zpráva
@@ -76,17 +91,50 @@ client.on("messageCreate", (msg) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
-  const roleID = process.env[`ROLE_${interaction.customId.toUpperCase()}`];
-  if (!roleID) return;
+  try {
+    const roleID = process.env[`ROLE_${interaction.customId.toUpperCase()}`];
+    
+    if (!roleID) {
+      console.error(`❌ Role ID nenalezeno pro: ROLE_${interaction.customId.toUpperCase()}`);
+      return await interaction.reply({ 
+        content: "❌ Chyba: Role není nakonfigurována.", 
+        ephemeral: true 
+      });
+    }
 
-  const role = interaction.guild.roles.cache.get(roleID);
+    const role = interaction.guild.roles.cache.get(roleID);
+    
+    if (!role) {
+      console.error(`❌ Role s ID ${roleID} nenalezena na serveru`);
+      return await interaction.reply({ 
+        content: "❌ Chyba: Role neexistuje na serveru.", 
+        ephemeral: true 
+      });
+    }
 
-  if (interaction.member.roles.cache.has(roleID)) {
-    await interaction.member.roles.remove(role);
-    interaction.reply({ content: `❌ Role **${role.name}** odebrána.`, ephemeral: true });
-  } else {
-    await interaction.member.roles.add(role);
-    interaction.reply({ content: `✅ Role **${role.name}** přidána.`, ephemeral: true });
+    if (interaction.member.roles.cache.has(roleID)) {
+      await interaction.member.roles.remove(role);
+      await interaction.reply({ 
+        content: `❌ Role **${role.name}** odebrána.`, 
+        ephemeral: true 
+      });
+      console.log(`✅ Role ${role.name} odebrána uživateli ${interaction.user.tag}`);
+    } else {
+      await interaction.member.roles.add(role);
+      await interaction.reply({ 
+        content: `✅ Role **${role.name}** přidána.`, 
+        ephemeral: true 
+      });
+      console.log(`✅ Role ${role.name} přidána uživateli ${interaction.user.tag}`);
+    }
+  } catch (error) {
+    console.error("❌ Error při zpracování interakce:", error);
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({ 
+        content: "❌ Něco se pokazilo. Bot možná nemá oprávnění spravovat role.", 
+        ephemeral: true 
+      });
+    }
   }
 });
 
