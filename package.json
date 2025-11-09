@@ -16,6 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@distube/yt-dlp": "^2.0.1",
     "@distube/ytdl-core": "^4.15.9",
     "discord.js": "^14.14.1",
     "distube": "^5.0.7",

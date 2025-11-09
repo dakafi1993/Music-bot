@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
 const { DisTube } = require('distube');
+const { YtDlpPlugin } = require('@distube/yt-dlp');
 
 const client = new Client({
     intents: [
@@ -10,9 +11,10 @@ const client = new Client({
     ]
 });
 
-// Vytvoření DisTube instance
+// Vytvoření DisTube instance s YtDlp pluginem
 const distube = new DisTube(client, {
-    emitNewSongOnly: true
+    emitNewSongOnly: true,
+    plugins: [new YtDlpPlugin()]
 });
 
 const commands = [

@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ['nodejs_22', 'python3', 'libsodium', 'pkg-config', 'ffmpeg']
+nixPkgs = ['nodejs_22', 'python3', 'libsodium', 'pkg-config', 'ffmpeg', 'yt-dlp']
 
 [phases.install]
 cmds = ['npm ci']
