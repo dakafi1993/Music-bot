@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
 const { Player } = require('discord-player');
+const ffmpegPath = require('ffmpeg-static');
 
 const client = new Client({
     intents: [
@@ -11,10 +12,16 @@ const client = new Client({
     ]
 });
 
-const player = new Player(client);
+const player = new Player(client, {
+    ytdlOptions: {
+        quality: 'highestaudio',
+        highWaterMark: 1 << 25
+    }
+});
 
 async function setupPlayer() {
     await player.extractors.loadDefault();
+    console.log('FFmpeg path:', ffmpegPath);
 }
 
 setupPlayer();
