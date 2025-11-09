@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('disco
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, entersState, VoiceConnectionStatus, StreamType } = require('@discordjs/voice');
 const youtubedl = require('youtube-dl-exec');
 const yts = require('youtube-sr').default;
+const fetch = require('node-fetch');
 
 const client = new Client({
     intents: [
@@ -231,7 +232,7 @@ async function playSong(queue) {
     console.log('Přehrávám:', song.title);
     
     try {
-        // Použít yt-dlp pro získání URL a pak streamovat přes ffmpeg
+        // Použít yt-dlp pro získání URL
         const info = await youtubedl(song.url, {
             dumpSingleJson: true,
             noWarnings: true,
@@ -249,7 +250,14 @@ async function playSong(queue) {
 
         console.log('Streamuji z:', audioUrl.substring(0, 50) + '...');
 
-        const resource = createAudioResource(audioUrl, {
+        // Stáhnout stream přes fetch
+        const response = await fetch(audioUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const resource = createAudioResource(response.body, {
             inputType: StreamType.Arbitrary,
             inlineVolume: true
         });
