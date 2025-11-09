@@ -1,5 +1,8 @@
 require('dotenv').config();
 
+// Force load sodium before discord.js
+const sodium = require('libsodium-wrappers');
+
 const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
 const { Player } = require('discord-player');
 const ffmpegPath = require('ffmpeg-static');
@@ -20,6 +23,8 @@ const player = new Player(client, {
 });
 
 async function setupPlayer() {
+    await sodium.ready;
+    console.log('Sodium ready!');
     await player.extractors.loadDefault();
     console.log('FFmpeg path:', ffmpegPath);
 }
