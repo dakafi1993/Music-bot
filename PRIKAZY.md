@@ -20,6 +20,12 @@ Přeskočí aktuální skladbu
 - Přejde na další skladbu ve frontě
 - Pokud není další skladba, přehrávání skončí
 
+### `/back`
+Vrátí se na předchozí skladbu
+- Přehraje znovu předchozí skladbu
+- Uchovává historii posledních 10 skladeb
+- Aktuální skladba se vrátí do fronty
+
 ### `/stop`
 Zastaví přehrávání a vymaže frontu
 - Ukončí všechnu hudbu
