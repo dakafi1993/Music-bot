@@ -236,10 +236,18 @@ async function playSong(queue) {
         const stream = ytdl(song.url, {
             filter: 'audioonly',
             quality: 'highestaudio',
-            highWaterMark: 1 << 25
+            highWaterMark: 1 << 25,
+            dlChunkSize: 0,
+            requestOptions: {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+            }
         });
 
-        const resource = createAudioResource(stream);
+        const resource = createAudioResource(stream, {
+            inlineVolume: true
+        });
         queue.player.play(resource);
         
         queue.textChannel.send(`🎵 Přehrávám: **${song.title}**`);
