@@ -41,6 +41,10 @@ const commands = [
         description: 'Přeskočí aktuální skladbu'
     },
     {
+        name: 'back',
+        description: 'Vrátí se na předchozí skladbu'
+    },
+    {
         name: 'stop',
         description: 'Zastaví přehrávání'
     },
@@ -126,6 +130,7 @@ client.on('interactionCreate', async interaction => {
                     connection,
                     player,
                     songs: [],
+                    history: [], // Historie přehraných skladeb
                     textChannel: interaction.channel
                 };
 
@@ -136,7 +141,11 @@ client.on('interactionCreate', async interaction => {
 
                 // Po skončení skladby
                 player.on(AudioPlayerStatus.Idle, () => {
-                    queue.songs.shift();
+                    const finished = queue.songs.shift();
+                    if (finished) {
+                        queue.history.push(finished); // Přidat do historie
+                        if (queue.history.length > 10) queue.history.shift(); // Max 10 v historii
+                    }
                     if (queue.songs.length > 0) {
                         playSong(queue);
                     } else {
@@ -212,6 +221,7 @@ client.on('interactionCreate', async interaction => {
                     connection,
                     player,
                     songs: [],
+                    history: [], // Historie přehraných skladeb
                     textChannel: interaction.channel
                 };
 
@@ -220,7 +230,11 @@ client.on('interactionCreate', async interaction => {
                 connection.subscribe(player);
 
                 player.on(AudioPlayerStatus.Idle, () => {
-                    queue.songs.shift();
+                    const finished = queue.songs.shift();
+                    if (finished) {
+                        queue.history.push(finished);
+                        if (queue.history.length > 10) queue.history.shift();
+                    }
                     if (queue.songs.length > 0) {
                         playSong(queue);
                     } else {
@@ -274,6 +288,30 @@ client.on('interactionCreate', async interaction => {
 
         queue.player.stop();
         return interaction.reply('⏭️ Přeskočeno!');
+    }
+
+    if (commandName === 'back') {
+        const queue = queues.get(interaction.guild.id);
+        
+        if (!queue) {
+            return interaction.reply({ content: '❌ Nic nehraje!', ephemeral: true });
+        }
+
+        if (!queue.history || queue.history.length === 0) {
+            return interaction.reply({ content: '❌ Žádná předchozí skladba!', ephemeral: true });
+        }
+
+        // Vrátit aktuální skladbu zpět do fronty
+        if (queue.songs.length > 0) {
+            queue.songs.unshift(queue.songs[0]);
+        }
+
+        // Vzít poslední skladbu z historie a dát ji na začátek fronty
+        const previousSong = queue.history.pop();
+        queue.songs.unshift(previousSong);
+
+        queue.player.stop(); // Zastaví aktuální a spustí předchozí
+        return interaction.reply('⏮️ Vracím se na předchozí skladbu!');
     }
 
     if (commandName === 'stop') {
