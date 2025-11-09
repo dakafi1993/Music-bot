@@ -17,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "@discordjs/voice": "^0.18.0",
+    "@distube/ytdl-core": "^4.15.9",
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
     "ffmpeg-static": "^5.2.0",
@@ -24,8 +25,7 @@
     "opusscript": "^0.0.8",
     "sodium-native": "^3.4.1",
     "tweetnacl": "^1.0.3",
-    "youtube-sr": "^4.3.12",
-    "ytdl-core": "^4.11.5"
+    "youtube-sr": "^4.3.12"
   },
   "engines": {
     "node": ">=22.0.0"
