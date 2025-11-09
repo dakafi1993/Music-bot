@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, entersState, VoiceConnectionStatus } = require('@discordjs/voice');
-const ytdl = require('@distube/ytdl-core');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, entersState, VoiceConnectionStatus, StreamType } = require('@discordjs/voice');
+const youtubedl = require('youtube-dl-exec');
 const yts = require('youtube-sr').default;
 
 const client = new Client({
@@ -233,21 +233,23 @@ async function playSong(queue) {
     console.log('Přehrávám:', song.title);
     
     try {
-        const stream = ytdl(song.url, {
-            filter: 'audioonly',
-            quality: 'highestaudio',
-            highWaterMark: 1 << 25,
-            dlChunkSize: 0,
-            requestOptions: {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                }
-            }
+        // Použití yt-dlp místo ytdl-core
+        const info = await youtubedl(song.url, {
+            dumpSingleJson: true,
+            noCheckCertificates: true,
+            noWarnings: true,
+            preferFreeFormats: true,
+            addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
         });
 
-        const resource = createAudioResource(stream, {
+        // Získání best audio streamu
+        const audioUrl = info.url;
+        
+        const resource = createAudioResource(audioUrl, {
+            inputType: StreamType.Arbitrary,
             inlineVolume: true
         });
+        
         queue.player.play(resource);
         
         queue.textChannel.send(`🎵 Přehrávám: **${song.title}**`);

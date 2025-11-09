@@ -25,6 +25,7 @@
     "opusscript": "^0.0.8",
     "sodium-native": "^3.4.1",
     "tweetnacl": "^1.0.3",
+    "youtube-dl-exec": "^3.0.26",
     "youtube-sr": "^4.3.12"
   },
   "engines": {
