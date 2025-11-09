@@ -16,16 +16,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@distube/yt-dlp": "^2.0.1",
-    "@distube/ytdl-core": "^4.15.9",
+    "@discordjs/voice": "^0.18.0",
     "discord.js": "^14.14.1",
-    "distube": "^5.0.7",
     "dotenv": "^16.3.1",
     "ffmpeg-static": "^5.2.0",
     "libsodium-wrappers": "^0.7.15",
     "opusscript": "^0.0.8",
     "sodium-native": "^3.4.1",
-    "tweetnacl": "^1.0.3"
+    "tweetnacl": "^1.0.3",
+    "youtube-sr": "^4.3.12",
+    "ytdl-core": "^4.11.5"
   },
   "engines": {
     "node": ">=22.0.0"
