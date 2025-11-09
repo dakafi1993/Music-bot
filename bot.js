@@ -1,11 +1,7 @@
 require('dotenv').config();
-
-// Force load sodium before discord.js
-const sodium = require('libsodium-wrappers');
-
 const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } = require('discord.js');
-const { Player } = require('discord-player');
-const ffmpegPath = require('ffmpeg-static');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus } = require('@discordjs/voice');
+const play = require('play-dl');
 
 const client = new Client({
     intents: [
@@ -15,55 +11,18 @@ const client = new Client({
     ]
 });
 
-const player = new Player(client, {
-    ytdlOptions: {
-        quality: 'highestaudio',
-        highWaterMark: 1 << 25
-    }
-});
-
-async function setupPlayer() {
-    await sodium.ready;
-    console.log('Sodium ready!');
-    await player.extractors.loadDefault();
-    console.log('FFmpeg path:', ffmpegPath);
-}
-
-setupPlayer();
-
-player.events.on('playerStart', (queue, track) => {
-    queue.metadata.channel.send(`🎵 Přehrávám: **${track.title}**`);
-});
-
-player.events.on('emptyQueue', (queue) => {
-    queue.metadata.channel.send('✅ Fronta je prázdná!');
-});
-
-player.events.on('error', (queue, error) => {
-    console.error(`[Player Error] ${error.message}`);
-    queue.metadata.channel.send(`❌ Chyba: ${error.message}`);
-});
+const queues = new Map();
 
 const commands = [
     {
         name: 'play',
         description: 'Přehraje skladbu z YouTube',
-        options: [
-            {
-                name: 'query',
-                type: 3,
-                description: 'Název skladby nebo URL',
-                required: true
-            }
-        ]
-    },
-    {
-        name: 'pause',
-        description: 'Pozastaví přehrávání'
-    },
-    {
-        name: 'resume',
-        description: 'Obnoví přehrávání'
+        options: [{
+            name: 'query',
+            type: 3,
+            description: 'Název skladby nebo URL',
+            required: true
+        }]
     },
     {
         name: 'skip',
@@ -71,7 +30,7 @@ const commands = [
     },
     {
         name: 'stop',
-        description: 'Zastaví přehrávání a vyčistí frontu'
+        description: 'Zastaví přehrávání'
     },
     {
         name: 'queue',
@@ -80,22 +39,6 @@ const commands = [
     {
         name: 'nowplaying',
         description: 'Zobrazí aktuální skladbu'
-    },
-    {
-        name: 'volume',
-        description: 'Nastaví hlasitost',
-        options: [
-            {
-                name: 'level',
-                type: 4,
-                description: 'Úroveň hlasitosti (0-100)',
-                required: true
-            }
-        ]
-    },
-    {
-        name: 'leave',
-        description: 'Opustí hlasový kanál'
     }
 ];
 
@@ -127,159 +70,164 @@ client.on('interactionCreate', async interaction => {
         }
 
         const query = interaction.options.getString('query');
-        
         await interaction.deferReply();
 
         try {
-            const searchResult = await player.search(query, {
-                requestedBy: interaction.user
-            });
-
-            if (!searchResult || !searchResult.tracks.length) {
-                return interaction.editReply('❌ Nenalezeny žádné výsledky!');
-            }
-
-            const queue = player.queues.create(interaction.guild.id, {
-                metadata: {
-                    channel: interaction.channel
+            let url = query;
+            
+            // If not a URL, search YouTube
+            if (!query.startsWith('http')) {
+                const searched = await play.search(query, { limit: 1 });
+                if (!searched || !searched[0]) {
+                    return interaction.editReply('❌ Nenalezeny žádné výsledky!');
                 }
-            });
-
-            try {
-                if (!queue.connection) await queue.connect(interaction.member.voice.channel);
-            } catch {
-                player.queues.delete(interaction.guild.id);
-                return interaction.editReply('❌ Nepodařilo se připojit k hlasovému kanálu!');
+                url = searched[0].url;
             }
 
-            searchResult.playlist ? queue.addTrack(searchResult.tracks) : queue.addTrack(searchResult.tracks[0]);
+            // Validate URL
+            const yt_info = await play.video_info(url);
+            const video = yt_info.video_details;
 
-            if (!queue.isPlaying()) await queue.node.play();
+            let queue = queues.get(interaction.guild.id);
+
+            if (!queue) {
+                const connection = joinVoiceChannel({
+                    channelId: interaction.member.voice.channel.id,
+                    guildId: interaction.guild.id,
+                    adapterCreator: interaction.guild.voiceAdapterCreator,
+                });
+
+                const player = createAudioPlayer();
+
+                queue = {
+                    connection,
+                    player,
+                    songs: [],
+                    textChannel: interaction.channel
+                };
+
+                queues.set(interaction.guild.id, queue);
+
+                player.on(AudioPlayerStatus.Idle, () => {
+                    queue.songs.shift();
+                    if (queue.songs.length > 0) {
+                        playSong(queue);
+                    } else {
+                        queue.textChannel.send('✅ Fronta je prázdná!');
+                    }
+                });
+
+                player.on('error', error => {
+                    console.error('Player error:', error);
+                    queue.textChannel.send(`❌ Chyba: ${error.message}`);
+                });
+
+                connection.subscribe(player);
+            }
+
+            queue.songs.push({
+                title: video.title,
+                url: url,
+                duration: video.durationInSec,
+                thumbnail: video.thumbnails[0].url
+            });
+
+            if (queue.songs.length === 1) {
+                playSong(queue);
+            }
 
             const embed = new EmbedBuilder()
                 .setColor('#00ff00')
                 .setTitle('✅ Přidáno do fronty')
-                .setDescription(searchResult.playlist ? 
-                    `Playlist: **${searchResult.playlist.title}** (${searchResult.tracks.length} skladeb)` : 
-                    `**${searchResult.tracks[0].title}**`)
-                .setThumbnail(searchResult.tracks[0].thumbnail);
+                .setDescription(`**${video.title}**`)
+                .setThumbnail(video.thumbnails[0].url);
 
             return interaction.editReply({ embeds: [embed] });
         } catch (error) {
             console.error('Play error:', error);
-            return interaction.editReply(`❌ Chyba při přehrávání: ${error.message}`);
+            return interaction.editReply(`❌ Chyba: ${error.message}`);
         }
-    }
-
-    if (commandName === 'pause') {
-        const queue = player.queues.get(interaction.guild.id);
-        if (!queue || !queue.isPlaying()) {
-            return interaction.reply({ content: '❌ Nic se nepřehrává!', ephemeral: true });
-        }
-
-        queue.node.pause();
-        return interaction.reply('⏸️ Přehrávání pozastaveno!');
-    }
-
-    if (commandName === 'resume') {
-        const queue = player.queues.get(interaction.guild.id);
-        if (!queue) {
-            return interaction.reply({ content: '❌ Nic se nepřehrává!', ephemeral: true });
-        }
-
-        queue.node.resume();
-        return interaction.reply('▶️ Přehrávání obnoveno!');
     }
 
     if (commandName === 'skip') {
-        const queue = player.queues.get(interaction.guild.id);
-        if (!queue || !queue.isPlaying()) {
+        const queue = queues.get(interaction.guild.id);
+        if (!queue || queue.songs.length === 0) {
             return interaction.reply({ content: '❌ Nic se nepřehrává!', ephemeral: true });
         }
 
-        queue.node.skip();
+        queue.player.stop();
         return interaction.reply('⏭️ Skladba přeskočena!');
     }
 
     if (commandName === 'stop') {
-        const queue = player.queues.get(interaction.guild.id);
+        const queue = queues.get(interaction.guild.id);
         if (!queue) {
             return interaction.reply({ content: '❌ Nic se nepřehrává!', ephemeral: true });
         }
 
-        queue.delete();
+        queue.songs = [];
+        queue.player.stop();
+        queue.connection.destroy();
+        queues.delete(interaction.guild.id);
         return interaction.reply('⏹️ Přehrávání zastaveno!');
     }
 
     if (commandName === 'queue') {
-        const queue = player.queues.get(interaction.guild.id);
-        if (!queue || !queue.tracks.data.length) {
+        const queue = queues.get(interaction.guild.id);
+        if (!queue || queue.songs.length === 0) {
             return interaction.reply({ content: '❌ Fronta je prázdná!', ephemeral: true });
         }
 
-        const currentTrack = queue.currentTrack;
-        const tracks = queue.tracks.data.slice(0, 10);
+        const current = queue.songs[0];
+        const upcoming = queue.songs.slice(1, 11);
 
         const embed = new EmbedBuilder()
             .setColor('#0099ff')
             .setTitle('🎵 Fronta skladeb')
             .setDescription(
-                `**Aktuálně hraje:**\n${currentTrack.title}\n\n` +
-                `**Další ve frontě:**\n${tracks.map((track, i) => `${i + 1}. ${track.title}`).join('\n')}`
+                `**Aktuálně hraje:**\n${current.title}\n\n` +
+                (upcoming.length > 0 ? `**Další ve frontě:**\n${upcoming.map((song, i) => `${i + 1}. ${song.title}`).join('\n')}` : '')
             );
 
         return interaction.reply({ embeds: [embed] });
     }
 
     if (commandName === 'nowplaying') {
-        const queue = player.queues.get(interaction.guild.id);
-        if (!queue || !queue.currentTrack) {
+        const queue = queues.get(interaction.guild.id);
+        if (!queue || queue.songs.length === 0) {
             return interaction.reply({ content: '❌ Nic se nepřehrává!', ephemeral: true });
         }
 
-        const track = queue.currentTrack;
-        const timestamp = queue.node.getTimestamp();
-        const progress = Math.round((timestamp.current.value / timestamp.total.value) * 20);
-        const progressBar = '▬'.repeat(progress) + '🔘' + '▬'.repeat(20 - progress);
-
+        const current = queue.songs[0];
         const embed = new EmbedBuilder()
             .setColor('#0099ff')
             .setTitle('🎵 Aktuálně hraje')
-            .setDescription(`**${track.title}**`)
-            .addFields(
-                { name: 'Autor', value: track.author, inline: true },
-                { name: 'Délka', value: track.duration, inline: true },
-                { name: 'Průběh', value: `${progressBar}\n${timestamp.current.label} / ${timestamp.total.label}` }
-            )
-            .setThumbnail(track.thumbnail);
+            .setDescription(`**${current.title}**`)
+            .setThumbnail(current.thumbnail);
 
         return interaction.reply({ embeds: [embed] });
     }
-
-    if (commandName === 'volume') {
-        const queue = player.queues.get(interaction.guild.id);
-        if (!queue) {
-            return interaction.reply({ content: '❌ Nic se nepřehrává!', ephemeral: true });
-        }
-
-        const volume = interaction.options.getInteger('level');
-        if (volume < 0 || volume > 100) {
-            return interaction.reply({ content: '❌ Hlasitost musí být mezi 0 a 100!', ephemeral: true });
-        }
-
-        queue.node.setVolume(volume);
-        return interaction.reply(`🔊 Hlasitost nastavena na ${volume}%`);
-    }
-
-    if (commandName === 'leave') {
-        const queue = player.queues.get(interaction.guild.id);
-        if (!queue) {
-            return interaction.reply({ content: '❌ Bot není v hlasovém kanále!', ephemeral: true });
-        }
-
-        queue.delete();
-        return interaction.reply('👋 Opouštím hlasový kanál!');
-    }
 });
+
+async function playSong(queue) {
+    const song = queue.songs[0];
+    
+    try {
+        const stream = await play.stream(song.url);
+        const resource = createAudioResource(stream.stream, {
+            inputType: stream.type
+        });
+
+        queue.player.play(resource);
+        queue.textChannel.send(`🎵 Přehrávám: **${song.title}**`);
+    } catch (error) {
+        console.error('Play error:', error);
+        queue.textChannel.send(`❌ Chyba při přehrávání: ${error.message}`);
+        queue.songs.shift();
+        if (queue.songs.length > 0) {
+            playSong(queue);
+        }
+    }
+}
 
 client.login(process.env.DISCORD_TOKEN);
